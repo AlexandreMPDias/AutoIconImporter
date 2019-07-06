@@ -1,0 +1,11 @@
+{
+  "name": "autoicongenerator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node ./src/main"
+  },
+  "author": "",
+  "license": "ISC"
+}
