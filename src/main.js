@@ -21,12 +21,6 @@ function treatFile(content) {
 		value: cleanContent,
 		type: 'filled'
 	}
-
-	return `{
-		value: \`${cleanContent}\`,
-		type: 'filled'
-	},
-	`
 }
 
 const iconObject = {}
@@ -35,17 +29,11 @@ fs.readdirSync(inputPath).forEach((filePath, i) => {
 	const iconKey = filePath.substring("icon_".length, filePath.length - ".svg".length).toUpperCase().replace('-', '_');
 
 	iconObject[iconKey] = treatFile(fs.readFileSync(path.join(inputPath, filePath)).toString())
-
-	// return `${iconKey}: ${treatFile(fs.readFileSync(path.join(inputPath, filePath)).toString())}`
 })
 
 const iconEntries = Object.entries(iconObject)
 
-iconEntries.forEach(([iconKey, values], index) => {
-	if(index < 3) {
-		console.log(values)
-
-	}
+iconEntries.forEach(([iconKey, values]) => {
 	if(values.value == "") {
 		console.log(`Icon [ ${iconKey} ] is mal-formed`)
 		console.log(`\tValues:\n${JSON.stringify(values, null, "\t").split("\n").join("\t\t\n")}`)
