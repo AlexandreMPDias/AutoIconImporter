@@ -26,9 +26,12 @@ function treatFile(content) {
 const iconObject = {}
 
 fs.readdirSync(inputPath).forEach((filePath, i) => {
-	const iconKey = filePath.substring("icon_".length, filePath.length - ".svg".length).toUpperCase().replace('-', '_');
+	if(!filePath.match(/\.gitignore/)) {
+		const iconKey = filePath.replace(/icon_(.+)\.svg/, '$1').toUpperCase().replace('-', '_');
+		// filePath.substring("icon_".length, filePath.length - ".svg".length).toUpperCase().replace('-', '_');
 
-	iconObject[iconKey] = treatFile(fs.readFileSync(path.join(inputPath, filePath)).toString())
+		iconObject[iconKey] = treatFile(fs.readFileSync(path.join(inputPath, filePath)).toString())
+	}
 })
 
 const iconEntries = Object.entries(iconObject)
@@ -40,14 +43,14 @@ iconEntries.forEach(([iconKey, values]) => {
 	}
 })
 
-fs.writeFile(svgOutputPath, `const icons = {\n
-	${iconEntries.map(([iconKey, values]) => {
-		const lines = []
-		lines.push(`${iconKey}: {`)
-		lines.push(`\tvalue: \`${values.value}\`,`)
-		lines.push(`\ttype: '${values.type}'`),
-		lines.push(`},\n`)
+fs.writeFile(svgOutputPath, `const icons = {
+${iconEntries.map(([iconKey, values]) => {
+	const lines = []
+	lines.push(`${iconKey}: {`)
+	lines.push(`\tvalue: \`${values.value}\`,`)
+	lines.push(`\ttype: '${values.type}'`),
+	lines.push(`},\n`)
 
-		return lines.map(a => `\t${a}`).join('\n')
-	}).join('')}
+	return lines.map(a => `\t${a}`).join('\n')
+}).join('')}
 }`, () => { });
