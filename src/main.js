@@ -3,37 +3,63 @@ const path = require('path');
 
 const inputPath = path.join(__dirname, '..', 'data');
 
-const svgOutputPath = path.join(__dirname, '..', 'output', 'svgValues.ts');
-const keysOutPutPath = path.join(__dirname, '..', 'output', 'svgKeys.ts');
-
-const svgValueExtractor = new RegExp(/^.+\sd="(.+)" style=.+$/);
+const svgOutputPath = path.join(__dirname, '..', 'out', 'svgValues.ts');
 
 function treatFile(content) {
-	const svgContent = content.replace(svgValueExtractor, "$1");
+	const transformations = [
+		s => s.split(/\n|\t/).join(''),
+		s => s.replace(/.+<path/,''),
+		s => s.replace(/"\/>.+/,''),
+		s => s.replace(/.+d=/, ""),
+		s => s.replace(/"/g,'')
+	]
+	const cleanContent = transformations.reduce((finalContent, transform) => {
+		return transform(finalContent)
+	}, content)
+
+	return {
+		value: cleanContent,
+		type: 'filled'
+	}
+
 	return `{
-		value: \`${svgContent}\`,
+		value: \`${cleanContent}\`,
 		type: 'filled'
 	},
 	`
 }
 
-const keys = [];
+const iconObject = {}
 
-const files = fs.readdirSync(inputPath).map((filePath, i) => {
-	const fileName = filePath.substring("icon_".length, filePath.length - ".svg".length).toUpperCase().replace('-', '_');
-	keys.push(fileName);
-	return `${fileName}: ${treatFile(fs.readFileSync(path.join(inputPath, filePath)).toString())}`
+fs.readdirSync(inputPath).forEach((filePath, i) => {
+	const iconKey = filePath.substring("icon_".length, filePath.length - ".svg".length).toUpperCase().replace('-', '_');
+
+	iconObject[iconKey] = treatFile(fs.readFileSync(path.join(inputPath, filePath)).toString())
+
+	// return `${iconKey}: ${treatFile(fs.readFileSync(path.join(inputPath, filePath)).toString())}`
 })
 
-fs.writeFile(svgOutputPath, `export default {
-	${files.join("")}
+const iconEntries = Object.entries(iconObject)
+
+iconEntries.forEach(([iconKey, values], index) => {
+	if(index < 3) {
+		console.log(values)
+
+	}
+	if(values.value == "") {
+		console.log(`Icon [ ${iconKey} ] is mal-formed`)
+		console.log(`\tValues:\n${JSON.stringify(values, null, "\t").split("\n").join("\t\t\n")}`)
+	}
+})
+
+fs.writeFile(svgOutputPath, `const icons = {\n
+	${iconEntries.map(([iconKey, values]) => {
+		const lines = []
+		lines.push(`${iconKey}: {`)
+		lines.push(`\tvalue: \`${values.value}\`,`)
+		lines.push(`\ttype: '${values.type}'`),
+		lines.push(`},\n`)
+
+		return lines.map(a => `\t${a}`).join('\n')
+	}).join('')}
 }`, () => { });
-
-`export type IconKeys =`
-
-fs.writeFile(keysOutPutPath, `export type IconKeys = ${keys.map((key, i) => {
-	if (i == 0) return `'${key}'`;
-	return ` | '${key}'`;
-}).join("")}`, () => { })
-
-console.log(files.join(""))
