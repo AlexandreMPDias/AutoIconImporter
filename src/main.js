@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { findCommonPrefix, findCommonSuffix } = require('./helpers/find-common-string');
 
 const inputPath = path.join(__dirname, '..', 'data');
 
@@ -25,18 +26,22 @@ function treatFile(content) {
 
 const iconObject = {};
 
-fs.readdirSync(inputPath).forEach((filePath, i) => {
-	if (!filePath.match(/\.gitignore/)) {
-		const iconKey = filePath
-			.replace(/icon_(.+)\.svg/, '$1')
-			.toUpperCase()
-			.replace('-', '_');
-		// filePath.substring("icon_".length, filePath.length - ".svg".length).toUpperCase().replace('-', '_');
+const files = fs.readdirSync(inputPath).filter(filePath => !filePath.match(/\.gitignore/));
 
-		console.log(iconKey);
+const common = files.slice(1).reduce(
+	(c, file) => ({
+		prefix: findCommonPrefix(c.prefix, file),
+		suffix: findCommonSuffix(c.suffix, file),
+	}),
+	{ prefix: files[0], suffix: files[0] }
+);
 
-		iconObject[iconKey] = treatFile(fs.readFileSync(path.join(inputPath, filePath)).toString());
-	}
+files.forEach(filePath => {
+	const cleanKey = filePath.toUpperCase().replace(/-/g, '_');
+	const iconKey = cleanKey.slice(common.prefix.length).slice(0, -common.suffix.length);
+
+	console.log(iconKey);
+	iconObject[iconKey] = treatFile(fs.readFileSync(path.join(inputPath, filePath)).toString());
 });
 
 const iconEntries = Object.entries(iconObject);
